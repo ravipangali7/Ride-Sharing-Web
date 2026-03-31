@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ModulePage } from "@/components/admin/ModulePage";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Column } from "@/components/admin/DataTable";
@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { Edit, Trash2, Send, Coins, Copy, Calendar, Phone, Mail, User as UserIcon } from "lucide-react";
 import { useAdminResource } from "@/hooks/useAdminResource";
 import { useCreateResource, useUpdateResource, useDeleteResource } from "@/hooks/useAdminMutations";
-import { fetchAdminResource, fetchAdminStats } from "@/lib/api";
+import { adjustAdminUserCoins, fetchAdminResource, fetchAdminStats } from "@/lib/api";
 
 interface UserData {
   id: string; phone: string; email: string; full_name: string; profile_photo: string;
@@ -67,6 +67,7 @@ const advancedFilterFields: FilterField[] = [
 
 export default function UserList() {
   const [users, setUsers] = useState<UserData[]>([]);
+  const queryClient = useQueryClient();
   const { data } = useAdminResource<any>("users", { page_size: 200 });
   const createMutation = useCreateResource("users");
   const updateMutation = useUpdateResource("users");
@@ -83,6 +84,18 @@ export default function UserList() {
   const [advFilters, setAdvFilters] = useState<Record<string, any>>({});
   const [searchQ, setSearchQ] = useState("");
   const [activeStatus, setActiveStatus] = useState("all");
+  const coinMutation = useMutation({
+    mutationFn: ({ userId, amount, reason }: { userId: string; amount: number; reason: string }) =>
+      adjustAdminUserCoins(userId, { amount, reason }),
+    onSuccess: async (_, vars) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-resource", "users"] }),
+        queryClient.invalidateQueries({ queryKey: ["user-coin-txns", vars.userId] }),
+      ]);
+      toast.success(`Coins adjusted: ${vars.amount > 0 ? "+" : ""}${vars.amount}`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   // Live stats for the stats bar
   const { data: statsData } = useQuery({
@@ -137,7 +150,7 @@ export default function UserList() {
       coin_balance: Number(u.coin_balance || 0),
       created_at: u.created_at ? String(u.created_at).slice(0, 10) : "",
       updated_at: u.updated_at ? String(u.updated_at).slice(0, 10) : "",
-      roles: [],
+      roles: Array.isArray(u.roles) ? u.roles : [],
     }));
     setUsers(mapped);
   }, [data?.results]);
@@ -165,8 +178,11 @@ export default function UserList() {
     if (!editingUser.full_name || !editingUser.phone) { toast.error("Name and phone are required"); return; }
     // Strip server-managed / read-only fields before sending
     const { id: _id, created_at, updated_at, referral_code, ...writableFields } = editingUser as any;
-    // referred_by: only include if it is a valid UUID (not display text)
     const payload: Record<string, any> = { ...writableFields };
+    const referredBy = typeof payload.referred_by === "string" ? payload.referred_by.trim() : "";
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(referredBy)) {
+      payload.referred_by = null;
+    }
     if (isEditing && editingUser.id) {
       updateMutation.mutate({ id: editingUser.id, data: payload }, {
         onSuccess: () => { toast.success("User updated"); setFormOpen(false); },
@@ -190,9 +206,7 @@ export default function UserList() {
   };
   const handleAdjustCoins = (amount: number, reason: string) => {
     if (coinTarget) {
-      setUsers(prev => prev.map(u => u.id === coinTarget.id ? { ...u, coin_balance: u.coin_balance + amount } : u));
-      if (selectedUser?.id === coinTarget.id) setSelectedUser(prev => prev ? { ...prev, coin_balance: prev.coin_balance + amount } : null);
-      toast.success(`Coins adjusted: ${amount > 0 ? "+" : ""}${amount} for ${coinTarget.full_name}. Reason: ${reason}`);
+      coinMutation.mutate({ userId: coinTarget.id, amount, reason });
     }
   };
 

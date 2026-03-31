@@ -143,6 +143,19 @@ export function fetchAdminStats(resource: string) {
   return request<ResourceStats>(`/admin/${resource}/stats/`);
 }
 
+export function adjustAdminUserCoins(
+  userId: string,
+  payload: { amount: number; reason: string },
+) {
+  return request<{ user_id: string; coin_balance: number; transaction_id: string }>(
+    `/admin/users/${userId}/adjust-coins/`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export function fetchDashboardOverview() {
