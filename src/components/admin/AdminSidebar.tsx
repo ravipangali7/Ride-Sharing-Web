@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Users, Bike, Package, Car, MapPin, UtensilsCrossed, ShoppingCart,
   Home, Wallet, Zap, Gift, Trophy, Bell, Headphones, Settings, Shield, BarChart3,
-  ChevronDown, ChevronLeft, ChevronRight, LogOut, Moon, Sun, Map
+  ChevronDown, ChevronLeft, ChevronRight, LogOut, Moon, Sun, Map, Smartphone,
 } from "lucide-react";
 
 const navGroups = [
@@ -128,6 +128,7 @@ const navGroups = [
     label: "SETTINGS",
     items: [
       { icon: Settings, label: "App Settings", path: "/admin/settings/app" },
+      { icon: Smartphone, label: "App Version", path: "/admin/settings/app-version" },
       { icon: Settings, label: "Service Charges", path: "/admin/settings/service-charges" },
       { icon: Settings, label: "App Versions", path: "/admin/settings/versions" },
       { icon: Settings, label: "Quick Replies", path: "/admin/settings/quick-replies" },

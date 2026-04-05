@@ -5,7 +5,7 @@ import { Bike, Package, UtensilsCrossed, ShoppingCart, Home, MapPin, ChevronRigh
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { fetchWebsiteHome } from "@/lib/api";
+import { fetchWebsiteHome, fetchMobileAppRelease } from "@/lib/api";
 
 const services = [
   { icon: Bike, title: "Ride Sharing", desc: "Book bikes, cars, autos instantly. Fixed fare or bargain.", color: "from-violet to-violet-light" },
@@ -47,6 +47,11 @@ export default function Index() {
     queryKey: ["website-home"],
     queryFn: fetchWebsiteHome,
   });
+  const { data: mobileApp } = useQuery({
+    queryKey: ["website-mobile-app"],
+    queryFn: fetchMobileAppRelease,
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60);
@@ -73,6 +78,19 @@ export default function Index() {
             {["Home", "Features", "Services", "How It Works", "Download"].map(l => (
               <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">{l}</a>
             ))}
+            {mobileApp?.android_file_url ? (
+              <a
+                href={mobileApp.android_file_url}
+                className="text-sm font-semibold text-primary hover:underline"
+                download
+              >
+                Download Android app
+              </a>
+            ) : (
+              <span className="text-sm font-medium text-muted-foreground/70 cursor-default" title="APK not published yet">
+                Download Android app
+              </span>
+            )}
           </div>
 
           <div className="hidden md:flex items-center gap-3">
@@ -95,6 +113,18 @@ export default function Index() {
             {["Home", "Features", "Services", "How It Works", "Download"].map(l => (
               <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`} className="block text-sm py-2" onClick={() => setMenuOpen(false)}>{l}</a>
             ))}
+            {mobileApp?.android_file_url ? (
+              <a
+                href={mobileApp.android_file_url}
+                className="block text-sm font-semibold text-primary py-2"
+                download
+                onClick={() => setMenuOpen(false)}
+              >
+                Download Android app
+              </a>
+            ) : (
+              <span className="block text-sm text-muted-foreground py-2">Download Android app (soon)</span>
+            )}
             <Link to="/admin/login"><Button variant="outline" className="w-full">Login</Button></Link>
             <Button className="w-full gradient-primary border-0">Get App</Button>
           </motion.div>

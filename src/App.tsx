@@ -7,6 +7,7 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AdminLogin from "./pages/admin/Login.tsx";
 import AdminDashboard from "./pages/admin/Dashboard.tsx";
+import AppVersionSettings from "./pages/admin/AppVersionSettings.tsx";
 import UserList from "./pages/admin/users/UserList.tsx";
 import RiderList from "./pages/admin/riders/RiderList.tsx";
 import ParcelAgents from "./pages/admin/parcel-agents/AgentList.tsx";
@@ -99,6 +100,7 @@ const App = () => (
           <Route path="/admin/notifications/inbox" element={<NotifInbox />} />
           <Route path="/admin/support" element={<SupportTickets />} />
           <Route path="/admin/settings/app" element={<AppSettings />} />
+          <Route path="/admin/settings/app-version" element={<AppVersionSettings />} />
           <Route path="/admin/settings/service-charges" element={<ServiceCharges />} />
           <Route path="/admin/settings/versions" element={<AppVersions />} />
           <Route path="/admin/settings/quick-replies" element={<QuickReplies />} />

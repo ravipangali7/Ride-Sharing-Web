@@ -186,6 +186,88 @@ export function fetchWebsiteHome() {
   return request<Record<string, any>>("/website/home/");
 }
 
+export interface MobileAppPublic {
+  current_app_version: number;
+  android_file_url: string | null;
+}
+
+/** Public endpoint — no auth. */
+export function fetchMobileAppRelease(): Promise<MobileAppPublic> {
+  return request<MobileAppPublic>("/website/mobile-app/");
+}
+
+/** Media URL for a stored relative path (e.g. `releases/app.apk`). */
+export function publicMediaUrl(relativePath: string | null | undefined): string | null {
+  if (!relativePath) return null;
+  const base = API_BASE.replace(/\/api\/?$/, "");
+  const path = relativePath.replace(/^\//, "");
+  return `${base}/media/${path}`;
+}
+
+/**
+ * PATCH admin resource with multipart/form-data (e.g. FileField). Upload progress 0–100.
+ */
+export function patchAdminResourceMultipart<T = Record<string, unknown>>(
+  resource: string,
+  id: string,
+  formData: FormData,
+  onProgress?: (percent: number) => void,
+): Promise<T> {
+  const exec = (isRetry: boolean): Promise<T> =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PATCH", `${API_BASE}/admin/${resource}/${id}/`);
+      const token = getAccessToken();
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && e.total > 0) {
+          onProgress?.(Math.round((100 * e.loaded) / e.total));
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status === 401 && !isRetry) {
+          void _refreshAccessToken().then((tok) => {
+            if (!tok) {
+              clearTokens();
+              window.location.href = "/admin/login";
+              reject(new Error("Unauthorized"));
+              return;
+            }
+            exec(true).then(resolve).catch(reject);
+          });
+          return;
+        }
+        if (xhr.status === 401) {
+          clearTokens();
+          window.location.href = "/admin/login";
+          reject(new Error("Unauthorized"));
+          return;
+        }
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(
+              xhr.responseText ? (JSON.parse(xhr.responseText) as T) : ({} as T),
+            );
+          } catch {
+            reject(new Error("Invalid response"));
+          }
+          return;
+        }
+        let msg = xhr.responseText;
+        try {
+          const j = JSON.parse(xhr.responseText) as { error?: string };
+          msg = j.error || msg;
+        } catch {
+          // keep text
+        }
+        reject(new Error(msg || `HTTP ${xhr.status}`));
+      };
+      xhr.onerror = () => reject(new Error("Network error"));
+      xhr.send(formData);
+    });
+  return exec(false);
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export interface AdminLoginResponse {
