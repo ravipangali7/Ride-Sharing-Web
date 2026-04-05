@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Bike, Package, UtensilsCrossed, ShoppingCart, Home, MapPin, ChevronRight, Star, Menu, X, Apple, Play, ArrowRight, Phone, Mail } from "lucide-react";
+import { Bike, Package, UtensilsCrossed, ShoppingCart, Home, MapPin, ChevronRight, Star, Menu, X, Apple, Play, ArrowRight, Phone, Mail, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -59,6 +59,8 @@ export default function Index() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const androidApkUrl = mobileApp?.android_file_url ?? null;
+
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Navbar */}
@@ -97,9 +99,19 @@ export default function Index() {
             <Link to="/admin/login">
               <Button variant="ghost" size="sm">Login</Button>
             </Link>
-            <Button size="sm" className="gradient-primary border-0 gap-1.5">
-              Get App <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
+            {androidApkUrl ? (
+              <Button size="sm" className="gradient-primary border-0 gap-1.5" asChild>
+                <a href={androidApkUrl} download>
+                  Get App <Download className="h-3.5 w-3.5" />
+                </a>
+              </Button>
+            ) : (
+              <Button size="sm" className="gradient-primary border-0 gap-1.5" asChild>
+                <a href="#download">
+                  Get App <ArrowRight className="h-3.5 w-3.5" />
+                </a>
+              </Button>
+            )}
           </div>
 
           <button className="md:hidden p-2" onClick={() => setMenuOpen(!menuOpen)}>
@@ -126,7 +138,17 @@ export default function Index() {
               <span className="block text-sm text-muted-foreground py-2">Download Android app (soon)</span>
             )}
             <Link to="/admin/login"><Button variant="outline" className="w-full">Login</Button></Link>
-            <Button className="w-full gradient-primary border-0">Get App</Button>
+            {androidApkUrl ? (
+              <Button className="w-full gradient-primary border-0 gap-2" asChild>
+                <a href={androidApkUrl} download onClick={() => setMenuOpen(false)}>
+                  <Download className="h-4 w-4" /> Download Android app
+                </a>
+              </Button>
+            ) : (
+              <Button className="w-full gradient-primary border-0" asChild>
+                <a href="#download" onClick={() => setMenuOpen(false)}>Get App</a>
+              </Button>
+            )}
           </motion.div>
         )}
       </nav>
@@ -149,12 +171,22 @@ export default function Index() {
                 Book a ride in seconds. Send parcels. Order food. Find a room. It's all Pugau.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button size="lg" className="gradient-primary border-0 gap-2 rounded-full px-6">
-                  <Apple className="h-5 w-5" /> App Store
+                <Button size="lg" variant="outline" className="gap-2 rounded-full px-6 opacity-80" disabled>
+                  <Apple className="h-5 w-5" /> App Store <span className="text-xs font-normal text-muted-foreground">(soon)</span>
                 </Button>
-                <Button size="lg" variant="outline" className="gap-2 rounded-full px-6">
-                  <Play className="h-5 w-5" /> Google Play
-                </Button>
+                {androidApkUrl ? (
+                  <Button size="lg" className="gradient-primary border-0 gap-2 rounded-full px-6 shadow-lg" asChild>
+                    <a href={androidApkUrl} download>
+                      <Download className="h-5 w-5" /> Download for Android
+                    </a>
+                  </Button>
+                ) : (
+                  <Button size="lg" variant="outline" className="gap-2 rounded-full px-6" asChild>
+                    <a href="#download">
+                      <Play className="h-5 w-5" /> Android <span className="text-xs font-normal text-muted-foreground">(see below)</span>
+                    </a>
+                  </Button>
+                )}
               </div>
               <div className="mt-10 flex gap-8">
                 {[
@@ -344,14 +376,26 @@ export default function Index() {
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp} className="rounded-3xl gradient-hero p-10 md:p-16 text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground">Download Pugau — Free</h2>
-            <p className="mt-3 text-primary-foreground/70 max-w-md mx-auto">Available on Android and iOS. Start riding, sending, and ordering today.</p>
+            <p className="mt-3 text-primary-foreground/70 max-w-md mx-auto">
+              {androidApkUrl
+                ? "Get the Android app (APK) directly. Install and start riding, sending, and ordering today."
+                : "Android and iOS apps are on the way. Check back soon for download links."}
+            </p>
             <div className="mt-8 flex justify-center gap-4 flex-wrap">
-              <Button size="lg" variant="secondary" className="rounded-full gap-2">
-                <Apple className="h-5 w-5" /> App Store
+              <Button size="lg" variant="secondary" className="rounded-full gap-2 opacity-90" disabled>
+                <Apple className="h-5 w-5" /> App Store <span className="text-xs font-normal opacity-80">(soon)</span>
               </Button>
-              <Button size="lg" variant="secondary" className="rounded-full gap-2">
-                <Play className="h-5 w-5" /> Google Play
-              </Button>
+              {androidApkUrl ? (
+                <Button size="lg" variant="secondary" className="rounded-full gap-2 font-semibold shadow-md border-2 border-primary-foreground/20" asChild>
+                  <a href={androidApkUrl} download>
+                    <Download className="h-5 w-5" /> Download Android app (APK)
+                  </a>
+                </Button>
+              ) : (
+                <Button size="lg" variant="secondary" className="rounded-full gap-2 opacity-75" disabled>
+                  <Play className="h-5 w-5" /> Android APK <span className="text-xs font-normal">(soon)</span>
+                </Button>
+              )}
             </div>
           </motion.div>
         </div>
