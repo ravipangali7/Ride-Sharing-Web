@@ -163,9 +163,68 @@ function _applyLiveStat(
   return stat;
 }
 
+function csvEscape(value: unknown): string {
+  if (value == null || value === "") return "";
+  const s = typeof value === "object" ? JSON.stringify(value) : String(value);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+/** Applies `AdvancedFilterDialog` state to a row when `config.advFilterFields` is set. */
+function matchesAdvFilters<T extends Record<string, any>>(
+  item: T,
+  filters: Record<string, any>,
+  fields: FilterField[] | undefined,
+): boolean {
+  if (!fields?.length) return true;
+  for (const f of fields) {
+    if (f.type === "number") {
+      const minV = filters[`${f.key}_min`];
+      const maxV = filters[`${f.key}_max`];
+      if ((minV === "" || minV === undefined) && (maxV === "" || maxV === undefined)) continue;
+      const raw = item[f.key];
+      const num = typeof raw === "number" ? raw : parseFloat(String(raw));
+      if (Number.isNaN(num)) return false;
+      if (minV !== "" && minV !== undefined && num < Number(minV)) return false;
+      if (maxV !== "" && maxV !== undefined && num > Number(maxV)) return false;
+      continue;
+    }
+    if (f.type === "date_range") {
+      const from = filters[`${f.key}_from`];
+      const to = filters[`${f.key}_to`];
+      if (!from && !to) continue;
+      const val = String(item[f.key] ?? "").slice(0, 10);
+      if ((from || to) && !val) return false;
+      if (from && val < String(from)) return false;
+      if (to && val > String(to)) return false;
+      continue;
+    }
+    const v = filters[f.key];
+    if (v === "" || v === undefined || v === null || v === false) continue;
+    if (f.type === "boolean") {
+      if (v === true && !item[f.key]) return false;
+      continue;
+    }
+    if (f.type === "select") {
+      if (String(item[f.key] ?? "") !== String(v)) return false;
+      continue;
+    }
+    if (f.type === "text") {
+      if (!String(item[f.key] ?? "").toLowerCase().includes(String(v).toLowerCase())) return false;
+      continue;
+    }
+    if (f.type === "date") {
+      const val = String(item[f.key] ?? "").slice(0, 10);
+      if (val !== String(v)) return false;
+      continue;
+    }
+  }
+  return true;
+}
+
 function CrudPage<T extends Record<string, any>>({ config }: { config: CrudPageConfig<T> }) {
   const resource = config.resource || TITLE_TO_RESOURCE[config.title];
-  const { data, isLoading } = useAdminResource<T>(resource || "", resource ? { page_size: 200 } : undefined);
+  const { data, isLoading, isError, error } = useAdminResource<T>(resource || "", resource ? { page_size: 200 } : undefined);
   const createMutation = useCreateResource(resource || "");
   const updateMutation = useUpdateResource(resource || "");
   const deleteMutation = useDeleteResource(resource || "");
@@ -199,12 +258,50 @@ function CrudPage<T extends Record<string, any>>({ config }: { config: CrudPageC
   const [advFilters, setAdvFilters] = useState<Record<string, any>>({});
   const [searchQ, setSearchQ] = useState("");
   const [activeStatus, setActiveStatus] = useState("all");
+  const [tablePage, setTablePage] = useState(1);
+  const tablePageSize = 25;
 
-  const filtered = items.filter(item => {
-    if (searchQ) { const q = searchQ.toLowerCase(); if (!config.searchKeys.some(k => String(item[k] || "").toLowerCase().includes(q))) return false; }
+  const filtered = items.filter((item) => {
+    if (searchQ) {
+      const q = searchQ.toLowerCase();
+      if (!config.searchKeys.some((k) => String(item[k] || "").toLowerCase().includes(q))) return false;
+    }
     if (activeStatus !== "all" && config.statusKey && item[config.statusKey] !== activeStatus) return false;
+    if (!matchesAdvFilters(item, advFilters, config.advFilterFields)) return false;
     return true;
   });
+
+  const totalTablePages = Math.max(1, Math.ceil(filtered.length / tablePageSize));
+  const currentTablePage = Math.min(tablePage, totalTablePages);
+  const paginatedRows = filtered.slice(
+    (currentTablePage - 1) * tablePageSize,
+    currentTablePage * tablePageSize,
+  );
+
+  useEffect(() => {
+    setTablePage(1);
+  }, [searchQ, activeStatus, resource, items.length]);
+
+  useEffect(() => {
+    if (tablePage > totalTablePages) setTablePage(totalTablePages);
+  }, [tablePage, totalTablePages]);
+
+  const handleExport = () => {
+    const headers = config.columns.map((c) => c.label);
+    const keys = config.columns.map((c) => String(c.key));
+    const lines = [
+      headers.map(csvEscape).join(","),
+      ...filtered.map((row) => keys.map((k) => csvEscape(row[k])).join(",")),
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${config.title.replace(/\s+/g, "-").toLowerCase()}-export.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Exported CSV");
+  };
 
   const handleCreate = () => {
     const empty: any = {};
@@ -259,7 +356,13 @@ function CrudPage<T extends Record<string, any>>({ config }: { config: CrudPageC
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <PageHeader title={config.title} subtitle={config.subtitle} createLabel={config.createLabel || "Create New"} onCreate={handleCreate} onExport={() => {}} />
+        <PageHeader
+          title={config.title}
+          subtitle={config.subtitle}
+          createLabel={config.createLabel || "Create New"}
+          onCreate={handleCreate}
+          onExport={handleExport}
+        />
         <StatsBar
           stats={config.stats.map(s => _applyLiveStat(s, liveStats))}
           className="!grid-cols-2 sm:!grid-cols-3 lg:!grid-cols-6"
@@ -274,7 +377,42 @@ function CrudPage<T extends Record<string, any>>({ config }: { config: CrudPageC
           advancedFilterCount={advFilterCount}
         />
         {isLoading && resource ? <div className="text-sm text-muted-foreground">Loading...</div> : null}
-        <DataTable columns={config.columns} data={filtered} onRowClick={(r: T) => { setSelected(r); setDrawerOpen(true); }} />
+        {isError && resource ? (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Failed to load {config.title}: {error instanceof Error ? error.message : "Unknown error"}
+          </div>
+        ) : null}
+        {!isLoading && !isError && resource && filtered.length === 0 ? (
+          <div className="text-sm text-muted-foreground">No records match the current filters.</div>
+        ) : null}
+        <DataTable columns={config.columns} data={paginatedRows} onRowClick={(r: T) => { setSelected(r); setDrawerOpen(true); }} />
+        {filtered.length > tablePageSize ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+            <p className="text-muted-foreground">
+              Page {currentTablePage} of {totalTablePages} · {filtered.length} rows (filters applied)
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={currentTablePage <= 1}
+                onClick={() => setTablePage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={currentTablePage >= totalTablePages}
+                onClick={() => setTablePage((p) => Math.min(totalTablePages, p + 1))}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <DetailDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title={selected ? String(selected[config.idKey] || config.title) : ""} subtitle="">

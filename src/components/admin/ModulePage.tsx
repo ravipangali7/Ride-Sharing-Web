@@ -40,7 +40,7 @@ export function ModulePage<T extends Record<string, any>>({
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <PageHeader title={title} subtitle={subtitle} createLabel={createLabel} onCreate={onCreate || (() => {})} onExport={() => {}} />
+        <PageHeader title={title} subtitle={subtitle} createLabel={createLabel} onCreate={onCreate || (() => {})} />
         <StatsBar stats={stats} className="!grid-cols-2 sm:!grid-cols-3 lg:!grid-cols-6" />
         {chart && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-xl border bg-card p-5">

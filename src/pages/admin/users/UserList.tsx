@@ -30,24 +30,7 @@ interface UserData {
   created_at: string; updated_at: string; roles: string[];
 }
 
-const names = ["Aarav Sharma", "Priya Thapa", "Bikash Rai", "Sunita Gurung", "Rajesh Poudel", "Anita KC", "Sunil Tamang", "Maya Shrestha", "Dipesh Adhikari", "Kabita Magar", "Roshan Bhandari", "Sita Lama", "Niraj Basnet", "Laxmi Dahal", "Arun Karki"];
-const genders = ["male", "female", "other"];
 const allRoles = ["customer", "rider", "parcel_delivery", "vendor", "restaurant", "room_owner"];
-
-const generateUsers = (): UserData[] => Array.from({ length: 30 }, (_, i) => ({
-  id: `USR-${String(i + 1).padStart(4, "0")}`,
-  phone: `+977 98${String(Math.floor(10000000 + Math.random() * 90000000))}`,
-  email: `${names[i % names.length].toLowerCase().replace(" ", ".")}${i}@email.com`,
-  full_name: names[i % names.length], profile_photo: "",
-  date_of_birth: `199${Math.floor(Math.random() * 9)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, "0")}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, "0")}`,
-  gender: genders[i % 3], is_active: i % 7 !== 0, is_verified: i % 3 !== 0,
-  referral_code: `PG${String(Math.random()).slice(2, 8).toUpperCase()}`,
-  referred_by: i > 5 ? `USR-${String(Math.floor(Math.random() * 5) + 1).padStart(4, "0")}` : null,
-  coin_balance: Math.floor(Math.random() * 500),
-  created_at: `2026-${String(Math.floor(Math.random() * 3) + 1).padStart(2, "0")}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, "0")}`,
-  updated_at: "2026-03-20", roles: [allRoles[i % 6], ...(i % 4 === 0 ? [allRoles[(i + 2) % 6]] : [])],
-}));
-
 
 const emptyUser: Omit<UserData, "id" | "created_at" | "updated_at"> = {
   phone: "", email: "", full_name: "", profile_photo: "", date_of_birth: "",

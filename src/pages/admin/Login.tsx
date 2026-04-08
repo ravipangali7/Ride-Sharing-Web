@@ -14,6 +14,7 @@ export default function AdminLogin() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [remember, setRemember] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -27,8 +28,8 @@ export default function AdminLogin() {
         ? { email: identifier, password }
         : { phone: identifier, password };
       const result = await adminLogin(payload);
-      storeTokens(result.access, result.refresh);
       sessionStorage.setItem("admin_user", JSON.stringify(result.user));
+      storeTokens(result.access, result.refresh, remember);
       navigate("/admin/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");
@@ -95,8 +96,10 @@ export default function AdminLogin() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Checkbox id="remember" />
-              <label htmlFor="remember" className="text-sm text-muted-foreground">Remember this device</label>
+              <Checkbox id="remember" checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
+              <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
+                Remember this device (stay signed in after closing the browser)
+              </label>
             </div>
 
             <Button type="submit" className="w-full gradient-primary border-0" disabled={loading}>

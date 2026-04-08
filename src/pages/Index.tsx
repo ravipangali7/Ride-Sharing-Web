@@ -33,6 +33,71 @@ const testimonials = [
   { name: "Rajesh Poudel", role: "Parcel Sender", quote: "Same-day parcel delivery at affordable prices. My go-to for sending packages across the city.", rating: 5 },
 ];
 
+/** Optional CMS via `AppSetting` JSON keys (see server `website_home_summary` → `marketing`). */
+function parseMarketingServices(raw: unknown): typeof services | null {
+  if (!Array.isArray(raw)) return null;
+  const iconMap: Record<string, typeof Bike> = {
+    bike: Bike,
+    ride: Bike,
+    package: Package,
+    parcel: Package,
+    utensils: UtensilsCrossed,
+    food: UtensilsCrossed,
+    cart: ShoppingCart,
+    shop: ShoppingCart,
+    home: Home,
+    room: Home,
+    mappin: MapPin,
+    map: MapPin,
+    tour: MapPin,
+  };
+  const out: typeof services = [] as typeof services;
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, string>;
+    if (!o.title || !o.desc) continue;
+    const Icon = iconMap[(o.icon || "bike").toLowerCase()] || Bike;
+    out.push({
+      icon: Icon,
+      title: o.title,
+      desc: o.desc,
+      color: o.color || "from-violet to-violet-light",
+    });
+  }
+  return out.length ? out : null;
+}
+
+function parseMarketingFeatures(raw: unknown): typeof features | null {
+  if (!Array.isArray(raw)) return null;
+  const out: typeof features = [] as typeof features;
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, string>;
+    if (!o.title || !o.desc) continue;
+    const align = o.align === "right" ? "right" : "left";
+    out.push({ title: o.title, desc: o.desc, align });
+  }
+  return out.length ? out : null;
+}
+
+function parseMarketingTestimonials(raw: unknown): typeof testimonials | null {
+  if (!Array.isArray(raw)) return null;
+  const out: typeof testimonials = [] as typeof testimonials;
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, string | number>;
+    if (!o.name || !o.quote) continue;
+    const rating = typeof o.rating === "number" ? Math.min(5, Math.max(1, Math.round(o.rating))) : 5;
+    out.push({
+      name: String(o.name),
+      role: String(o.role || "Customer"),
+      quote: String(o.quote),
+      rating,
+    });
+  }
+  return out.length ? out : null;
+}
+
 const fadeUp = {
   initial: { opacity: 0, y: 24, filter: "blur(4px)" },
   whileInView: { opacity: 1, y: 0, filter: "blur(0px)" },
@@ -52,6 +117,13 @@ export default function Index() {
     queryFn: fetchMobileAppRelease,
     staleTime: 60_000,
   });
+
+  const marketing = homeData?.marketing as
+    | { services?: unknown; features?: unknown; testimonials?: unknown }
+    | undefined;
+  const displayServices = parseMarketingServices(marketing?.services) ?? services;
+  const displayFeatures = parseMarketingFeatures(marketing?.features) ?? features;
+  const displayTestimonials = parseMarketingTestimonials(marketing?.testimonials) ?? testimonials;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60);
@@ -234,9 +306,9 @@ export default function Index() {
             <p className="mt-3 text-muted-foreground max-w-md mx-auto">Everything your city needs, in a single tap.</p>
           </motion.div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {services.map((s, i) => (
+            {displayServices.map((s, i) => (
               <motion.div
-                key={s.title}
+                key={`${s.title}-${i}`}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
@@ -314,9 +386,9 @@ export default function Index() {
             <p className="mt-3 text-muted-foreground">Features designed for the way you live.</p>
           </motion.div>
           <div className="space-y-6 max-w-4xl mx-auto">
-            {features.map((f, i) => (
+            {displayFeatures.map((f, i) => (
               <motion.div
-                key={f.title}
+                key={`${f.title}-${i}`}
                 initial={{ opacity: 0, x: f.align === "left" ? -30 : 30 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
@@ -343,9 +415,9 @@ export default function Index() {
             <h2 className="text-3xl md:text-4xl font-bold">What People Say</h2>
           </motion.div>
           <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-thin snap-x">
-            {testimonials.map((t, i) => (
+            {displayTestimonials.map((t, i) => (
               <motion.div
-                key={i}
+                key={`${t.name}-${i}`}
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
@@ -441,8 +513,12 @@ export default function Index() {
           <div className="mt-10 pt-6 border-t flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-muted-foreground">
             <span>© 2026 Pugau. All rights reserved.</span>
             <div className="flex gap-4">
-              <span className="hover:text-foreground cursor-pointer">Privacy Policy</span>
-              <span className="hover:text-foreground cursor-pointer">Terms of Service</span>
+              <Link to="/privacy" className="hover:text-foreground">
+                Privacy Policy
+              </Link>
+              <Link to="/terms" className="hover:text-foreground">
+                Terms of Service
+              </Link>
             </div>
           </div>
         </div>

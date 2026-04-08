@@ -10,23 +10,50 @@ export interface ListResponse<T> {
 
 // ─── JWT token helpers ────────────────────────────────────────────────────────
 
+const REMEMBER_KEY = "admin_remember_device";
+
+function _tokensRemembered(): boolean {
+  return localStorage.getItem(REMEMBER_KEY) === "1";
+}
+
 export function getAccessToken(): string | null {
-  return sessionStorage.getItem("admin_access_token");
+  return sessionStorage.getItem("admin_access_token") || localStorage.getItem("admin_access_token");
 }
 
 export function getRefreshToken(): string | null {
-  return sessionStorage.getItem("admin_refresh_token");
+  return sessionStorage.getItem("admin_refresh_token") || localStorage.getItem("admin_refresh_token");
 }
 
-export function storeTokens(access: string, refresh: string) {
-  sessionStorage.setItem("admin_access_token", access);
-  sessionStorage.setItem("admin_refresh_token", refresh);
+/** Persist tokens (and mirrored `admin_user` JSON) in sessionStorage, or localStorage when `remember` is true. */
+export function storeTokens(access: string, refresh: string, remember?: boolean) {
+  const userJson = sessionStorage.getItem("admin_user") ?? localStorage.getItem("admin_user");
+  if (remember) {
+    localStorage.setItem(REMEMBER_KEY, "1");
+    localStorage.setItem("admin_access_token", access);
+    localStorage.setItem("admin_refresh_token", refresh);
+    if (userJson) localStorage.setItem("admin_user", userJson);
+    sessionStorage.removeItem("admin_access_token");
+    sessionStorage.removeItem("admin_refresh_token");
+    sessionStorage.removeItem("admin_user");
+  } else {
+    localStorage.removeItem(REMEMBER_KEY);
+    localStorage.removeItem("admin_access_token");
+    localStorage.removeItem("admin_refresh_token");
+    localStorage.removeItem("admin_user");
+    sessionStorage.setItem("admin_access_token", access);
+    sessionStorage.setItem("admin_refresh_token", refresh);
+    if (userJson) sessionStorage.setItem("admin_user", userJson);
+  }
 }
 
 export function clearTokens() {
   sessionStorage.removeItem("admin_access_token");
   sessionStorage.removeItem("admin_refresh_token");
   sessionStorage.removeItem("admin_user");
+  localStorage.removeItem(REMEMBER_KEY);
+  localStorage.removeItem("admin_access_token");
+  localStorage.removeItem("admin_refresh_token");
+  localStorage.removeItem("admin_user");
 }
 
 async function _refreshAccessToken(): Promise<string | null> {
@@ -41,7 +68,13 @@ async function _refreshAccessToken(): Promise<string | null> {
     if (!res.ok) return null;
     const data = await res.json();
     if (data.access) {
-      sessionStorage.setItem("admin_access_token", data.access);
+      if (_tokensRemembered()) {
+        localStorage.setItem("admin_access_token", data.access);
+        if (data.refresh) localStorage.setItem("admin_refresh_token", data.refresh);
+      } else {
+        sessionStorage.setItem("admin_access_token", data.access);
+        if (data.refresh) sessionStorage.setItem("admin_refresh_token", data.refresh);
+      }
       return data.access as string;
     }
   } catch {
@@ -141,6 +174,24 @@ export interface ResourceStats {
 
 export function fetchAdminStats(resource: string) {
   return request<ResourceStats>(`/admin/${resource}/stats/`);
+}
+
+export interface MapEntity {
+  type: string;
+  name: string;
+  lat: number;
+  lng: number;
+  status: string;
+  detail: string;
+}
+
+export interface MapEntitiesResponse {
+  entities: MapEntity[];
+  updated_at: string;
+}
+
+export function fetchAdminMapEntities() {
+  return request<MapEntitiesResponse>("/admin/map/entities/");
 }
 
 export function adjustAdminUserCoins(

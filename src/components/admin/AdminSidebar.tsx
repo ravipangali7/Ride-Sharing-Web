@@ -4,10 +4,11 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Users, Bike, Package, Car, MapPin, UtensilsCrossed, ShoppingCart,
   Home, Wallet, Zap, Gift, Trophy, Bell, Headphones, Settings, Shield, BarChart3,
-  ChevronDown, ChevronLeft, ChevronRight, LogOut, Moon, Sun, Map, Smartphone,
+  ChevronDown, ChevronLeft, ChevronRight, LogOut, Moon, Sun, Map, Smartphone, Medal,
 } from "lucide-react";
 
-const navGroups = [
+/** Shared with `AdminLayout` mobile “More” sheet — keep paths in sync with `App.tsx` routes. */
+export const adminNavGroups = [
   {
     label: "OVERVIEW",
     items: [
@@ -19,6 +20,8 @@ const navGroups = [
     items: [
       { icon: Users, label: "All Users", path: "/admin/users" },
       { icon: Bike, label: "Rider Profiles", path: "/admin/riders" },
+      { icon: Trophy, label: "Rider Leaderboard", path: "/admin/riders/leaderboard" },
+      { icon: Medal, label: "Rider Achievements", path: "/admin/riders/achievements" },
       { icon: Package, label: "Parcel Agents", path: "/admin/parcel-agents" },
     ]
   },
@@ -128,9 +131,9 @@ const navGroups = [
     label: "SETTINGS",
     items: [
       { icon: Settings, label: "App Settings", path: "/admin/settings/app" },
-      { icon: Smartphone, label: "App Version", path: "/admin/settings/app-version" },
+      { icon: Smartphone, label: "Mobile APK release", path: "/admin/settings/app-version" },
       { icon: Settings, label: "Service Charges", path: "/admin/settings/service-charges" },
-      { icon: Settings, label: "App Versions", path: "/admin/settings/versions" },
+      { icon: Settings, label: "Version history (CRUD)", path: "/admin/settings/versions" },
       { icon: Settings, label: "Quick Replies", path: "/admin/settings/quick-replies" },
       { icon: Settings, label: "Cancellation", path: "/admin/settings/cancellation" },
     ]
@@ -157,7 +160,27 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
   const location = useLocation();
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(navGroups.map(g => g.label)));
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(adminNavGroups.map(g => g.label)));
+
+  let profileName = "Super Admin";
+  let profileLine = "superadmin";
+  let profileInitials = "SA";
+  try {
+    const raw = sessionStorage.getItem("admin_user") || localStorage.getItem("admin_user") || "{}";
+    const u = JSON.parse(raw) as Record<string, string>;
+    profileName = u.full_name || u.username || profileName;
+    profileLine = u.email || u.username || profileLine;
+    const base = (u.full_name || u.username || "A").trim();
+    profileInitials =
+      base
+        .split(/\s+/)
+        .map((w) => w[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase() || "SA";
+  } catch {
+    /* keep defaults */
+  }
 
   const toggleGroup = (label: string) => {
     const next = new Set(expandedGroups);
@@ -199,10 +222,12 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
       {!collapsed && (
         <div className="px-4 py-3 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-semibold text-sidebar-foreground">SA</div>
-            <div>
-              <p className="text-xs font-medium text-sidebar-foreground">Super Admin</p>
-              <p className="text-[10px] text-sidebar-foreground/60">superadmin</p>
+            <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-semibold text-sidebar-foreground">
+              {profileInitials}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-sidebar-foreground truncate">{profileName}</p>
+              <p className="text-[10px] text-sidebar-foreground/60 truncate">{profileLine}</p>
             </div>
           </div>
         </div>
@@ -210,7 +235,7 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto scrollbar-thin py-2">
-        {navGroups.map(group => (
+        {adminNavGroups.map(group => (
           <div key={group.label} className="mb-1">
             {!collapsed && (
               <button
