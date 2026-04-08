@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Edit, Trash2 } from "lucide-react";
 import { useAdminResource } from "@/hooks/useAdminResource";
 import { useUpdateResource, useDeleteResource } from "@/hooks/useAdminMutations";
-import { fetchAdminStats } from "@/lib/api";
+import { fetchAdminResource, fetchAdminStats } from "@/lib/api";
 import { MapPickerField } from "@/components/admin/MapPickerField";
 
 const STATUS_OPTIONS = ["pending", "confirmed", "packed", "picked_up", "delivered", "cancelled"] as const;
@@ -76,6 +76,16 @@ export default function EcommerceOrdersAdmin() {
   const [advFilters, setAdvFilters] = useState<Record<string, any>>({});
   const [searchQ, setSearchQ] = useState("");
   const [activeStatus, setActiveStatus] = useState("all");
+
+  const { data: lineItemsData, isLoading: lineItemsLoading } = useQuery({
+    queryKey: ["admin-resource", "ecommerce_order_items", selected?.id],
+    queryFn: () =>
+      fetchAdminResource<Record<string, unknown>>("ecommerce_order_items", {
+        order: selected!.id,
+        page_size: 100,
+      }),
+    enabled: Boolean(drawerOpen && selected?.id),
+  });
 
   const advFilterFields: FilterField[] = [
     {
@@ -230,6 +240,38 @@ export default function EcommerceOrdersAdmin() {
       <DetailDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title={selected?.id || ""} subtitle={`${selected?.customer} — ${selected?.vendor}`}>
         {selected && (
           <div className="space-y-4">
+            <div>
+              <span className="text-[11px] uppercase tracking-wider font-medium text-muted-foreground">Line items</span>
+              <div className="mt-2 rounded-md border divide-y max-h-48 overflow-y-auto">
+                {lineItemsLoading ? (
+                  <p className="p-3 text-sm text-muted-foreground">Loading items…</p>
+                ) : (lineItemsData?.results ?? []).length === 0 ? (
+                  <p className="p-3 text-sm text-muted-foreground">No line items</p>
+                ) : (
+                  (lineItemsData?.results ?? []).map((row: any) => (
+                    <div key={row.id} className="flex justify-between gap-2 px-3 py-2 text-sm">
+                      <span className="min-w-0 truncate">{row.product_name || row.product || "Product"}</span>
+                      <span className="shrink-0 font-mono text-xs">
+                        Rs. {row.unit_price} × {row.quantity} = Rs. {row.total_price}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+              {(() => {
+                const rows = lineItemsData?.results ?? [];
+                if (lineItemsLoading || rows.length === 0) return null;
+                const sum = rows.reduce((s: number, r: any) => s + Number(r.total_price ?? 0), 0);
+                const sub = Number(selected.subtotal);
+                const ok = Number.isFinite(sub) && Math.abs(sum - sub) < 0.02;
+                return (
+                  <p className={`mt-2 text-xs ${ok ? "text-muted-foreground" : "text-amber-600 font-medium"}`}>
+                    Sum of lines: Rs. {sum.toFixed(2)}
+                    {ok ? " (matches subtotal)" : " — differs from order subtotal; check pricing or manual edits"}
+                  </p>
+                );
+              })()}
+            </div>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={() => { openEdit(selected); setDrawerOpen(false); }}>
                 <Edit className="h-3.5 w-3.5 mr-1" /> Edit

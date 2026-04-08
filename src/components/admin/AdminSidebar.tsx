@@ -46,6 +46,7 @@ export const adminNavGroups = [
     label: "FOOD MODULE",
     items: [
       { icon: UtensilsCrossed, label: "Restaurants", path: "/admin/food/restaurants" },
+      { icon: UtensilsCrossed, label: "Categories", path: "/admin/food/categories" },
       { icon: UtensilsCrossed, label: "Menu Items", path: "/admin/food/menu" },
       { icon: UtensilsCrossed, label: "Food Orders", path: "/admin/food/orders" },
     ]

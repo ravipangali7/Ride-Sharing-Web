@@ -22,6 +22,7 @@ import ParcelBookings from "./pages/admin/parcels/ParcelBookings.tsx";
 import Restaurants from "./pages/admin/food/Restaurants.tsx";
 import FoodOrders from "./pages/admin/food/FoodOrders.tsx";
 import MenuItems from "./pages/admin/food/MenuItems.tsx";
+import FoodCategories from "./pages/admin/food/FoodCategories.tsx";
 import Vendors from "./pages/admin/ecommerce/Vendors.tsx";
 import Products from "./pages/admin/ecommerce/Products.tsx";
 import ProductCategories from "./pages/admin/ecommerce/ProductCategories.tsx";
@@ -71,6 +72,7 @@ const App = () => (
           <Route path="/admin/food/restaurants" element={<Restaurants />} />
           <Route path="/admin/food/orders" element={<FoodOrders />} />
           <Route path="/admin/food/menu" element={<MenuItems />} />
+          <Route path="/admin/food/categories" element={<FoodCategories />} />
           <Route path="/admin/ecommerce/vendors" element={<Vendors />} />
           <Route path="/admin/ecommerce/products" element={<Products />} />
           <Route path="/admin/ecommerce/categories" element={<ProductCategories />} />

@@ -108,6 +108,19 @@ export default function FoodOrders() {
     );
   }, [data?.results]);
 
+  useEffect(() => {
+    if (!formOpen || isEditing) return;
+    const s = parseFloat(editing.subtotal || "0");
+    const d = parseFloat(editing.delivery_charge || "0");
+    if (Number.isNaN(s) || Number.isNaN(d)) return;
+    const sum = s + d;
+    setEditing(p => {
+      const cur = parseFloat(String(p.total_amount || ""));
+      if (!Number.isNaN(cur) && Math.abs(cur - sum) < 0.001) return p;
+      return { ...p, total_amount: sum.toFixed(2) };
+    });
+  }, [formOpen, isEditing, editing.subtotal, editing.delivery_charge]);
+
   const filtered = items.filter(o => {
     if (searchQ) { const q = searchQ.toLowerCase(); if (!o.id.toLowerCase().includes(q) && !o.customer.toLowerCase().includes(q) && !o.restaurant.toLowerCase().includes(q)) return false; }
     if (activeStatus !== "all" && o.status !== activeStatus) return false;
@@ -124,11 +137,11 @@ export default function FoodOrders() {
     if (!editing.delivery_address?.trim()) { toast.error("Delivery address is required"); return; }
     const subtotal = parseFloat(editing.subtotal || "0");
     const deliveryCharge = parseFloat(editing.delivery_charge || "0");
-    const total = parseFloat(editing.total_amount || "0");
-    if (Number.isNaN(subtotal) || Number.isNaN(deliveryCharge) || Number.isNaN(total)) {
-      toast.error("Enter valid amounts for subtotal, delivery, and total");
+    if (Number.isNaN(subtotal) || Number.isNaN(deliveryCharge)) {
+      toast.error("Enter valid amounts for subtotal and delivery");
       return;
     }
+    const total = subtotal + deliveryCharge;
     const payload: Record<string, any> = {
       customer: editing.customer_id,
       restaurant: editing.restaurant_id,
