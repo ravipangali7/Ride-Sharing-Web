@@ -38,14 +38,6 @@ interface CrudPageConfig<T> {
 }
 
 const TITLE_TO_RESOURCE: Record<string, string> = {
-  "Vendors": "vendors",
-  "Products": "products",
-  "Product Categories": "product_categories",
-  "Ecommerce Orders": "ecommerce_orders",
-  "Room Listings": "room_listings",
-  "Room Owners": "room_owners",
-  "Room Inquiries": "room_inquiries",
-  "Booking Requests": "room_requests",
   "Wallets": "wallets",
   "Wallet Transactions": "wallet_transactions",
   "Payments": "payments",
@@ -462,123 +454,6 @@ function CrudPage<T extends Record<string, any>>({ config }: { config: CrudPageC
     </AdminLayout>
   );
 }
-
-// ══════════════════════════════════════════════
-// ECOMMERCE
-// ══════════════════════════════════════════════
-export const Vendors = () => <CrudPage config={{
-  title: "Vendors", subtitle: "Manage ecommerce vendors", createLabel: "Add Vendor", idKey: "id", idPrefix: "VND",
-  stats: [{ label: "Total", value: 124 }, { label: "Approved", value: 108 }, { label: "Revenue", value: "Rs. 8.4L" }, { label: "Pending", value: 16 }, { label: "Products", value: 2847 }, { label: "Active", value: 96 }],
-  searchKeys: ["id", "name", "owner"],
-  statusFilters: [{ label: "All", value: "all" }, { label: "Approved", value: "approved" }, { label: "Pending", value: "pending" }],
-  statusKey: "status",
-  formFields: [
-    { key: "name", label: "Shop Name", required: true }, { key: "owner", label: "Owner Name", required: true },
-    { key: "phone", label: "Phone" }, { key: "email", label: "Email" },
-    { key: "address", label: "Address" }, { key: "category", label: "Category", type: "select", options: ["Electronics", "Fashion", "Grocery", "Home"] },
-    { key: "commission", label: "Commission %" }, { key: "status", label: "Status", type: "select", options: ["approved", "pending", "suspended"] },
-    { key: "is_verified", label: "Verified", type: "boolean" },
-  ],
-  columns: [
-    { key: "id", label: "ID", render: (r: any) => <span className="font-mono text-xs">{r.id}</span> },
-    { key: "store_name", label: "Shop", render: (r: any) => <span className="font-medium">{r.store_name || r.name}</span> },
-    { key: "user_full_name", label: "Owner", render: (r: any) => r.user_full_name || r.user || "—" },
-    { key: "category", label: "Category" },
-    { key: "commission", label: "Commission" },
-    { key: "status", label: "Status", render: (r: any) => <StatusBadge status={r.status} /> },
-    { key: "is_verified", label: "Verified", render: (r: any) => <StatusBadge status={r.is_verified ? "active" : "pending"} /> },
-  ],
-  generateData: () => Array.from({ length: 15 }, (_, i) => ({
-    id: `VND-${String(i + 1).padStart(4, "0")}`, name: ["Tech Hub", "Fashion World", "Green Grocery", "Home Decor"][i % 4],
-    owner: ["Ram S.", "Sita G.", "Hari P."][i % 3], phone: `+977 98${Math.floor(1e7 + Math.random() * 9e7)}`,
-    email: `vendor${i}@email.com`, address: ["Thamel", "Patan", "Baneshwor"][i % 3],
-    category: ["Electronics", "Fashion", "Grocery", "Home"][i % 4], commission: `${10 + i % 5}%`,
-    status: ["approved", "pending", "approved"][i % 3], is_verified: i % 3 !== 2,
-  })),
-}} />;
-
-export const Products = () => <CrudPage config={{
-  title: "Products", subtitle: "Browse all products", createLabel: "Add Product", idKey: "id", idPrefix: "PRD",
-  stats: [{ label: "Total", value: 2847 }, { label: "In Stock", value: 2341 }, { label: "Active", value: 2156 }, { label: "Out of Stock", value: 506 }, { label: "Categories", value: 48 }, { label: "Avg Price", value: "Rs. 1,240" }],
-  searchKeys: ["id", "name", "vendor"],
-  formFields: [
-    { key: "name", label: "Product Name", required: true }, { key: "vendor", label: "Vendor", required: true },
-    { key: "category", label: "Category" }, { key: "price", label: "Price" },
-    { key: "stock", label: "Stock", type: "number" }, { key: "sku", label: "SKU" },
-    { key: "is_active", label: "Active", type: "boolean" }, { key: "description", label: "Description", type: "textarea" },
-  ],
-  columns: [
-    { key: "id", label: "ID", render: (r: any) => <span className="font-mono text-xs">{r.id}</span> },
-    { key: "name", label: "Product", render: (r: any) => <span className="font-medium">{r.name}</span> },
-    { key: "vendor_store_name", label: "Vendor", render: (r: any) => r.vendor_store_name || r.vendor || "—" },
-    { key: "category_name", label: "Category", render: (r: any) => r.category_name || r.category || "—" },
-    { key: "price", label: "Price", render: (r: any) => <span className="font-mono">{r.price}</span> },
-    { key: "stock", label: "Stock", render: (r: any) => <span className="font-mono">{r.stock}</span> },
-    { key: "is_active", label: "Active", render: (r: any) => <StatusBadge status={r.is_active ? "online" : "offline"} /> },
-  ],
-  generateData: () => Array.from({ length: 20 }, (_, i) => ({
-    id: `PRD-${String(i + 1).padStart(4, "0")}`, name: ["Wireless Earbuds", "Cotton T-Shirt", "Rice 5kg", "Table Lamp"][i % 4],
-    vendor: ["Tech Hub", "Fashion World", "Green Grocery"][i % 3], category: ["Electronics", "Fashion", "Grocery"][i % 3],
-    price: `Rs. ${Math.floor(200 + Math.random() * 3000)}`, stock: Math.floor(Math.random() * 200),
-    sku: `SKU-${String(Math.random()).slice(2, 8)}`, is_active: i % 5 !== 4, description: "",
-  })),
-}} />;
-
-export const ProductCategories = () => <CrudPage config={{
-  title: "Product Categories", subtitle: "Manage category tree", createLabel: "Add Category", idKey: "id", idPrefix: "CAT",
-  stats: [{ label: "Categories", value: 48 }, { label: "Top Level", value: 12 }, { label: "Sub", value: 36 }, { label: "Active", value: 42 }, { label: "Products", value: 2847 }, { label: "Empty", value: 3 }],
-  searchKeys: ["id", "name"], formFields: [{ key: "name", label: "Name", required: true }, { key: "parent", label: "Parent Category" }, { key: "slug", label: "Slug" }, { key: "is_active", label: "Active", type: "boolean" }, { key: "sort_order", label: "Sort Order", type: "number" }],
-  columns: [{ key: "id", label: "ID", render: (r: any) => <span className="font-mono text-xs">{r.id}</span> }, { key: "name", label: "Name", render: (r: any) => <span className="font-medium">{r.name}</span> }, { key: "parent", label: "Parent" }, { key: "sort_order", label: "Order" }, { key: "is_active", label: "Active", render: (r: any) => <StatusBadge status={r.is_active ? "online" : "offline"} /> }],
-  generateData: () => Array.from({ length: 12 }, (_, i) => ({ id: `CAT-${String(i + 1).padStart(4, "0")}`, name: ["Electronics", "Fashion", "Grocery", "Home", "Sports", "Beauty"][i % 6], parent: i > 5 ? ["Electronics", "Fashion", "Grocery"][i % 3] : "—", slug: ["electronics", "fashion", "grocery", "home", "sports", "beauty"][i % 6], is_active: i % 4 !== 3, sort_order: i + 1 })),
-}} />;
-
-export const EcomOrders = () => <CrudPage config={{
-  title: "Ecommerce Orders", subtitle: "Monitor ecommerce orders", idKey: "id", idPrefix: "EO",
-  stats: [{ label: "Total", value: 4821 }, { label: "Live", value: 8, pulse: true }, { label: "Revenue Today", value: "Rs. 12K" }, { label: "Pending", value: 14 }, { label: "Delivered", value: 4200 }, { label: "Cancelled", value: 87 }],
-  searchKeys: ["id", "customer", "vendor"], statusFilters: [{ label: "All", value: "all" }, { label: "Pending", value: "pending" }, { label: "Processing", value: "processing" }, { label: "Delivered", value: "delivered" }], statusKey: "status",
-  formFields: [{ key: "customer", label: "Customer", required: true }, { key: "vendor", label: "Vendor", required: true }, { key: "items", label: "Items", type: "number" }, { key: "total", label: "Total" }, { key: "status", label: "Status", type: "select", options: ["pending", "processing", "shipped", "delivered", "cancelled"] }, { key: "payment", label: "Payment", type: "select", options: ["Cash", "Wallet", "eSewa"] }],
-  columns: [{ key: "id", label: "ID", render: (r: any) => <span className="font-mono text-xs">{r.id}</span> }, { key: "customer_full_name", label: "Customer", render: (r: any) => r.customer_full_name || r.customer || "—" }, { key: "vendor_store_name", label: "Vendor", render: (r: any) => r.vendor_store_name || r.vendor || "—" }, { key: "items_count", label: "Items", render: (r: any) => r.items_count || r.items }, { key: "total_amount", label: "Total", render: (r: any) => <span className="font-mono">Rs. {r.total_amount || r.total}</span> }, { key: "status", label: "Status", render: (r: any) => <StatusBadge status={r.status} /> }, { key: "payment_method", label: "Payment", render: (r: any) => r.payment_method || r.payment }],
-  generateData: () => Array.from({ length: 20 }, (_, i) => ({ id: `EO-${String(i + 1).padStart(4, "0")}`, customer: ["Aarav S.", "Priya T.", "Bikash R."][i % 3], vendor: ["Tech Hub", "Fashion World"][i % 2], items: Math.floor(1 + Math.random() * 5), total: `Rs. ${Math.floor(500 + Math.random() * 5000)}`, status: ["pending", "processing", "shipped", "delivered", "cancelled"][i % 5], payment: ["Cash", "Wallet", "eSewa"][i % 3] })),
-}} />;
-
-// ══════════════════════════════════════════════
-// ROOM RENT
-// ══════════════════════════════════════════════
-export const RoomListings = () => <CrudPage config={{
-  title: "Room Listings", subtitle: "Manage room listings", createLabel: "Add Listing", idKey: "id", idPrefix: "RM",
-  stats: [{ label: "Total", value: 847 }, { label: "Available", value: 542 }, { label: "Pending", value: 18 }, { label: "Rented", value: 287 }, { label: "Avg Price", value: "Rs. 12K" }, { label: "New Today", value: 4 }],
-  searchKeys: ["id", "title", "location"], statusFilters: [{ label: "All", value: "all" }, { label: "Available", value: "available" }, { label: "Rented", value: "rented" }, { label: "Pending", value: "pending" }], statusKey: "status",
-  formFields: [{ key: "title", label: "Title", required: true }, { key: "owner", label: "Owner", required: true }, { key: "location", label: "Location" }, { key: "price", label: "Monthly Price" }, { key: "rooms", label: "Rooms", type: "number" }, { key: "type", label: "Type", type: "select", options: ["Single", "Double", "Flat", "Apartment"] }, { key: "status", label: "Status", type: "select", options: ["available", "rented", "pending", "maintenance"] }, { key: "amenities", label: "Amenities" }, { key: "description", label: "Description", type: "textarea" }],
-  columns: [{ key: "id", label: "ID", render: (r: any) => <span className="font-mono text-xs">{r.id}</span> }, { key: "title", label: "Title", render: (r: any) => <span className="font-medium">{r.title}</span> }, { key: "owner_display_name", label: "Owner", render: (r: any) => r.owner_display_name || r.owner || "—" }, { key: "full_address", label: "Address", render: (r: any) => r.full_address || r.city || "—" }, { key: "room_type", label: "Type", render: (r: any) => r.room_type || "—" }, { key: "status", label: "Status", render: (r: any) => <StatusBadge status={r.status} /> }],
-  generateData: () => Array.from({ length: 15 }, (_, i) => ({ id: `RM-${String(i + 1).padStart(4, "0")}`, title: ["2BHK Flat Patan", "Single Room Thamel", "Studio Apartment"][i % 3], owner: ["Ram S.", "Sita G.", "Hari P."][i % 3], location: ["Patan", "Thamel", "Baneshwor"][i % 3], price: `Rs. ${Math.floor(5000 + Math.random() * 20000)}`, rooms: Math.floor(1 + Math.random() * 4), type: ["Single", "Double", "Flat"][i % 3], status: ["available", "rented", "pending"][i % 3], amenities: "WiFi, Parking", description: "" })),
-}} />;
-
-export const RoomOwners = () => <CrudPage config={{
-  title: "Room Owners", subtitle: "Manage room owner profiles", createLabel: "Add Owner", idKey: "id", idPrefix: "RO",
-  stats: [{ label: "Total", value: 284 }, { label: "Verified", value: 241 }, { label: "Listings", value: 847 }, { label: "Pending", value: 43 }, { label: "Active", value: 220 }, { label: "Revenue", value: "Rs. 2.4L" }],
-  searchKeys: ["id", "name", "phone"],
-  formFields: [{ key: "name", label: "Owner Name", required: true }, { key: "phone", label: "Phone", required: true }, { key: "email", label: "Email" }, { key: "address", label: "Address" }, { key: "listings", label: "Listings", type: "number" }, { key: "is_verified", label: "Verified", type: "boolean" }],
-  columns: [{ key: "id", label: "ID", render: (r: any) => <span className="font-mono text-xs">{r.id}</span> }, { key: "name", label: "Name", render: (r: any) => <span className="font-medium">{r.name}</span> }, { key: "phone", label: "Phone" }, { key: "listings", label: "Listings" }, { key: "is_verified", label: "Verified", render: (r: any) => <StatusBadge status={r.is_verified ? "active" : "pending"} /> }],
-  generateData: () => Array.from({ length: 12 }, (_, i) => ({ id: `RO-${String(i + 1).padStart(4, "0")}`, name: ["Ram Shrestha", "Sita Gurung", "Hari Poudel"][i % 3], phone: `+977 98${Math.floor(1e7 + Math.random() * 9e7)}`, email: `owner${i}@email.com`, address: ["Patan", "Thamel"][i % 2], listings: Math.floor(1 + Math.random() * 5), is_verified: i % 3 !== 2 })),
-}} />;
-
-export const RoomInquiries = () => <CrudPage config={{
-  title: "Room Inquiries", subtitle: "Customer inquiries", idKey: "id", idPrefix: "RI",
-  stats: [{ label: "Total", value: 1247 }, { label: "Pending", value: 42 }, { label: "Replied", value: 1184 }, { label: "Today", value: 8 }, { label: "Avg Response", value: "2.4h" }, { label: "Conversion", value: "18%" }],
-  searchKeys: ["id", "customer", "listing"], statusFilters: [{ label: "All", value: "all" }, { label: "Pending", value: "pending" }, { label: "Replied", value: "replied" }], statusKey: "status",
-  formFields: [{ key: "customer", label: "Customer", required: true }, { key: "listing", label: "Listing", required: true }, { key: "message", label: "Message", type: "textarea" }, { key: "status", label: "Status", type: "select", options: ["pending", "replied", "closed"] }],
-  columns: [{ key: "id", label: "ID", render: (r: any) => <span className="font-mono text-xs">{r.id}</span> }, { key: "customer", label: "Customer" }, { key: "listing", label: "Listing" }, { key: "status", label: "Status", render: (r: any) => <StatusBadge status={r.status} /> }, { key: "created", label: "Created" }],
-  generateData: () => Array.from({ length: 12 }, (_, i) => ({ id: `RI-${String(i + 1).padStart(4, "0")}`, customer: ["Aarav S.", "Priya T."][i % 2], listing: `RM-${String(i + 1).padStart(4, "0")}`, message: "Interested in this listing", status: ["pending", "replied", "closed"][i % 3], created: `${i + 1}h ago` })),
-}} />;
-
-export const RoomRequests = () => <CrudPage config={{
-  title: "Booking Requests", subtitle: "Room booking requests", idKey: "id", idPrefix: "BR",
-  stats: [{ label: "Total", value: 487 }, { label: "Pending", value: 15 }, { label: "Accepted", value: 384 }, { label: "Rejected", value: 88 }, { label: "Today", value: 5 }, { label: "Revenue", value: "Rs. 1.2L" }],
-  searchKeys: ["id", "customer", "listing"], statusFilters: [{ label: "All", value: "all" }, { label: "Pending", value: "pending" }, { label: "Accepted", value: "accepted" }, { label: "Rejected", value: "rejected" }], statusKey: "status",
-  formFields: [{ key: "customer", label: "Customer", required: true }, { key: "listing", label: "Listing", required: true }, { key: "move_in", label: "Move-in Date", type: "date" }, { key: "duration", label: "Duration (months)", type: "number" }, { key: "status", label: "Status", type: "select", options: ["pending", "accepted", "rejected"] }, { key: "notes", label: "Notes", type: "textarea" }],
-  columns: [{ key: "id", label: "ID", render: (r: any) => <span className="font-mono text-xs">{r.id}</span> }, { key: "customer", label: "Customer" }, { key: "listing", label: "Listing" }, { key: "move_in", label: "Move-in" }, { key: "duration", label: "Duration" }, { key: "status", label: "Status", render: (r: any) => <StatusBadge status={r.status} /> }],
-  generateData: () => Array.from({ length: 12 }, (_, i) => ({ id: `BR-${String(i + 1).padStart(4, "0")}`, customer: ["Aarav S.", "Priya T.", "Bikash R."][i % 3], listing: `RM-${String(i + 1).padStart(4, "0")}`, move_in: `2026-04-${String(1 + i).padStart(2, "0")}`, duration: `${Math.floor(3 + Math.random() * 9)} months`, status: ["pending", "accepted", "rejected"][i % 3], notes: "" })),
-}} />;
 
 // ══════════════════════════════════════════════
 // FINANCE

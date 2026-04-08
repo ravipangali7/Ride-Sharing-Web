@@ -6,6 +6,7 @@ import { DetailDrawer } from "@/components/admin/DetailDrawer";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { FilterField } from "@/components/admin/AdvancedFilterDialog";
 import { UserSearchField } from "@/components/admin/UserSearchField";
+import { MapPickerField } from "@/components/admin/MapPickerField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,9 @@ interface RestaurantData {
   owner: string;           // display name
   owner_id: string;        // FK UUID (User)
   address: string;
+  phone: string;
+  latitude: number;
+  longitude: number;
   is_open: boolean;
   is_approved: boolean;
   is_cloud_kitchen: boolean;
@@ -35,9 +39,10 @@ interface RestaurantData {
 }
 
 const emptyRestaurant: Omit<RestaurantData, "id" | "created_at" | "rating"> = {
-  name: "", owner: "", owner_id: "", address: "",
-  is_open: false, is_approved: false, is_cloud_kitchen: false,
-  delivery_radius_km: "", description: "",
+  name: "", owner: "", owner_id: "", address: "", phone: "",
+  latitude: 27.7172, longitude: 85.324,
+  is_open: true, is_approved: false, is_cloud_kitchen: false,
+  delivery_radius_km: "5", description: "",
 };
 
 const advFilterFields: FilterField[] = [
@@ -79,6 +84,9 @@ export default function Restaurants() {
         owner: r.owner_full_name || "",
         owner_id: r.owner || "",
         address: r.address || "",
+        phone: r.phone || "",
+        latitude: Number(r.latitude) || 27.7172,
+        longitude: Number(r.longitude) || 85.324,
         is_open: Boolean(r.is_open),
         is_approved: Boolean(r.is_approved),
         is_cloud_kitchen: Boolean(r.is_cloud_kitchen),
@@ -106,11 +114,19 @@ export default function Restaurants() {
   const handleSave = () => {
     if (!editing.name) { toast.error("Name is required"); return; }
     if (!editing.owner_id) { toast.error("Owner is required"); return; }
-    const { owner, owner_id, rating, created_at, ...rest } = editing as any;
+    if (!editing.phone?.trim()) { toast.error("Phone is required"); return; }
     const payload: Record<string, any> = {
-      ...rest,
-      owner: owner_id,
-      ...(rest.delivery_radius_km ? { delivery_radius_km: parseFloat(rest.delivery_radius_km) || null } : {}),
+      owner: editing.owner_id,
+      name: editing.name,
+      description: editing.description || "",
+      address: editing.address || "",
+      phone: editing.phone.trim(),
+      latitude: editing.latitude ?? 27.7172,
+      longitude: editing.longitude ?? 85.324,
+      delivery_radius_km: editing.delivery_radius_km ? parseFloat(editing.delivery_radius_km) : 5,
+      is_open: Boolean(editing.is_open),
+      is_approved: Boolean(editing.is_approved),
+      is_cloud_kitchen: Boolean(editing.is_cloud_kitchen),
     };
     if (isEditing && (editing as any).id) {
       updateMutation.mutate({ id: (editing as any).id, data: payload }, { onSuccess: () => { toast.success("Restaurant updated"); setFormOpen(false); } });
@@ -162,7 +178,8 @@ export default function Restaurants() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {([
-                ["Name", selected.name], ["Owner", selected.owner], ["Address", selected.address],
+                ["Name", selected.name], ["Owner", selected.owner], ["Phone", selected.phone],
+                ["Address", selected.address], ["Location", `${selected.latitude}, ${selected.longitude}`],
                 ["Open", selected.is_open ? "Yes" : "No"], ["Rating", `⭐ ${selected.rating}`],
                 ["Approved", selected.is_approved ? "Yes" : "No"], ["Cloud Kitchen", selected.is_cloud_kitchen ? "Yes" : "No"],
                 ["Delivery Radius", selected.delivery_radius_km ? `${selected.delivery_radius_km} km` : "—"],
@@ -188,9 +205,21 @@ export default function Restaurants() {
               label="Owner"
             />
             <Separator />
+            <div className="space-y-1.5">
+              <Label className="text-sm">Phone *</Label>
+              <Input value={editing.phone} onChange={e => setEditing(p => ({ ...p, phone: e.target.value }))} placeholder="e.g. 9800000000" />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5 col-span-2"><Label className="text-sm">Address</Label><Input value={editing.address} onChange={e => setEditing(p => ({ ...p, address: e.target.value }))} /></div>
-              <div className="space-y-1.5"><Label className="text-sm">Delivery Radius (km)</Label><Input type="number" value={editing.delivery_radius_km} onChange={e => setEditing(p => ({ ...p, delivery_radius_km: e.target.value }))} /></div>
+              <div className="col-span-2">
+                <MapPickerField
+                  label="Restaurant location"
+                  latitude={editing.latitude ?? 27.7172}
+                  longitude={editing.longitude ?? 85.324}
+                  onLocationChange={(lat, lng) => setEditing(p => ({ ...p, latitude: lat, longitude: lng }))}
+                />
+              </div>
+              <div className="space-y-1.5 col-span-2"><Label className="text-sm">Delivery Radius (km)</Label><Input type="number" value={editing.delivery_radius_km} onChange={e => setEditing(p => ({ ...p, delivery_radius_km: e.target.value }))} /></div>
               <div className="flex items-center justify-between p-3 rounded-lg border"><Label>Open</Label><Switch checked={editing.is_open} onCheckedChange={v => setEditing(p => ({ ...p, is_open: v }))} /></div>
               <div className="flex items-center justify-between p-3 rounded-lg border"><Label>Approved</Label><Switch checked={editing.is_approved} onCheckedChange={v => setEditing(p => ({ ...p, is_approved: v }))} /></div>
               <div className="flex items-center justify-between p-3 rounded-lg border"><Label>Cloud Kitchen</Label><Switch checked={editing.is_cloud_kitchen} onCheckedChange={v => setEditing(p => ({ ...p, is_cloud_kitchen: v }))} /></div>

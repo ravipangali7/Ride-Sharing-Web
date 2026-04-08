@@ -7,6 +7,7 @@ import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { FilterField } from "@/components/admin/AdvancedFilterDialog";
 import { UserSearchField } from "@/components/admin/UserSearchField";
 import { EntitySearchField } from "@/components/admin/EntitySearchField";
+import { MapPickerField } from "@/components/admin/MapPickerField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Edit, Trash2 } from "lucide-react";
 import { useAdminResource } from "@/hooks/useAdminResource";
@@ -27,8 +29,12 @@ interface FoodOrderData {
   restaurant: string;         // display name
   restaurant_id: string;      // FK UUID
   items_count: number;
+  subtotal: string;
   total_amount: string;
   delivery_charge: string;
+  delivery_address: string;
+  delivery_latitude: number;
+  delivery_longitude: number;
   status: string;
   payment_method: string;
   special_instruction: string;
@@ -38,7 +44,10 @@ interface FoodOrderData {
 const emptyOrder: Omit<FoodOrderData, "id" | "created_at"> = {
   customer: "", customer_id: "",
   restaurant: "", restaurant_id: "",
-  items_count: 1, total_amount: "", delivery_charge: "",
+  items_count: 0,
+  subtotal: "0", total_amount: "0", delivery_charge: "0",
+  delivery_address: "",
+  delivery_latitude: 27.7172, delivery_longitude: 85.324,
   status: "pending", payment_method: "cash", special_instruction: "",
 };
 
@@ -85,8 +94,12 @@ export default function FoodOrders() {
         restaurant: o.restaurant_name || "",
         restaurant_id: o.restaurant || "",
         items_count: Number(o.items_count || 0),
+        subtotal: o.subtotal != null ? String(o.subtotal) : "",
         total_amount: o.total_amount ? String(o.total_amount) : "",
         delivery_charge: o.delivery_charge ? String(o.delivery_charge) : "",
+        delivery_address: o.delivery_address || "",
+        delivery_latitude: Number(o.delivery_latitude) || 27.7172,
+        delivery_longitude: Number(o.delivery_longitude) || 85.324,
         status: o.status || "pending",
         payment_method: o.payment_method || "cash",
         special_instruction: o.special_instruction || "",
@@ -108,13 +121,26 @@ export default function FoodOrders() {
   const handleSave = () => {
     if (!editing.customer_id) { toast.error("Customer is required"); return; }
     if (!editing.restaurant_id) { toast.error("Restaurant is required"); return; }
-    const { customer, customer_id, restaurant, restaurant_id, created_at, ...rest } = editing as any;
+    if (!editing.delivery_address?.trim()) { toast.error("Delivery address is required"); return; }
+    const subtotal = parseFloat(editing.subtotal || "0");
+    const deliveryCharge = parseFloat(editing.delivery_charge || "0");
+    const total = parseFloat(editing.total_amount || "0");
+    if (Number.isNaN(subtotal) || Number.isNaN(deliveryCharge) || Number.isNaN(total)) {
+      toast.error("Enter valid amounts for subtotal, delivery, and total");
+      return;
+    }
     const payload: Record<string, any> = {
-      ...rest,
-      customer: customer_id,
-      restaurant: restaurant_id,
-      total_amount: rest.total_amount ? parseFloat(rest.total_amount) : null,
-      delivery_charge: rest.delivery_charge ? parseFloat(rest.delivery_charge) : null,
+      customer: editing.customer_id,
+      restaurant: editing.restaurant_id,
+      delivery_address: editing.delivery_address.trim(),
+      delivery_latitude: editing.delivery_latitude ?? 27.7172,
+      delivery_longitude: editing.delivery_longitude ?? 85.324,
+      subtotal,
+      delivery_charge: deliveryCharge,
+      total_amount: total,
+      payment_method: editing.payment_method,
+      status: editing.status,
+      special_instruction: editing.special_instruction || "",
     };
     if (isEditing && (editing as any).id) {
       updateMutation.mutate({ id: (editing as any).id, data: payload }, { onSuccess: () => { toast.success("Order updated"); setFormOpen(false); } });
@@ -170,8 +196,10 @@ export default function FoodOrders() {
               {([
                 ["Customer", selected.customer], ["Restaurant", selected.restaurant],
                 ["Items", String(selected.items_count)],
+                ["Subtotal", selected.subtotal ? `Rs. ${selected.subtotal}` : "—"],
                 ["Total", selected.total_amount ? `Rs. ${selected.total_amount}` : "—"],
                 ["Delivery", selected.delivery_charge ? `Rs. ${selected.delivery_charge}` : "—"],
+                ["Address", selected.delivery_address],
                 ["Status", selected.status], ["Payment", selected.payment_method],
                 ["Notes", selected.special_instruction], ["Created", selected.created_at],
               ] as [string, string][]).map(([k, v]) => (
@@ -203,9 +231,20 @@ export default function FoodOrders() {
               required
             />
             <Separator />
+            <div className="space-y-1.5">
+              <Label className="text-sm">Delivery address *</Label>
+              <Textarea value={editing.delivery_address} onChange={e => setEditing(p => ({ ...p, delivery_address: e.target.value }))} />
+            </div>
+            <MapPickerField
+              label="Delivery location"
+              latitude={editing.delivery_latitude ?? 27.7172}
+              longitude={editing.delivery_longitude ?? 85.324}
+              onLocationChange={(lat, lng) => setEditing(p => ({ ...p, delivery_latitude: lat, delivery_longitude: lng }))}
+            />
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label className="text-sm">Total Amount (Rs)</Label><Input type="number" value={editing.total_amount} onChange={e => setEditing(p => ({ ...p, total_amount: e.target.value }))} /></div>
-              <div className="space-y-1.5"><Label className="text-sm">Delivery Charge (Rs)</Label><Input type="number" value={editing.delivery_charge} onChange={e => setEditing(p => ({ ...p, delivery_charge: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label className="text-sm">Subtotal (Rs)</Label><Input type="number" value={editing.subtotal} onChange={e => setEditing(p => ({ ...p, subtotal: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label className="text-sm">Delivery charge (Rs)</Label><Input type="number" value={editing.delivery_charge} onChange={e => setEditing(p => ({ ...p, delivery_charge: e.target.value }))} /></div>
+              <div className="space-y-1.5 col-span-2"><Label className="text-sm">Total amount (Rs)</Label><Input type="number" value={editing.total_amount} onChange={e => setEditing(p => ({ ...p, total_amount: e.target.value }))} /></div>
               <div className="space-y-1.5">
                 <Label className="text-sm">Payment Method</Label>
                 <Select value={editing.payment_method} onValueChange={v => setEditing(p => ({ ...p, payment_method: v }))}>

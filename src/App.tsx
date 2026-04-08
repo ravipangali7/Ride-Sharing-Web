@@ -22,9 +22,15 @@ import ParcelBookings from "./pages/admin/parcels/ParcelBookings.tsx";
 import Restaurants from "./pages/admin/food/Restaurants.tsx";
 import FoodOrders from "./pages/admin/food/FoodOrders.tsx";
 import MenuItems from "./pages/admin/food/MenuItems.tsx";
+import Vendors from "./pages/admin/ecommerce/Vendors.tsx";
+import Products from "./pages/admin/ecommerce/Products.tsx";
+import ProductCategories from "./pages/admin/ecommerce/ProductCategories.tsx";
+import EcommerceOrders from "./pages/admin/ecommerce/EcommerceOrders.tsx";
+import RoomListings from "./pages/admin/rooms/RoomListings.tsx";
+import RoomOwners from "./pages/admin/rooms/RoomOwners.tsx";
+import RoomInquiries from "./pages/admin/rooms/RoomInquiries.tsx";
+import RoomRequests from "./pages/admin/rooms/RoomRequests.tsx";
 import {
-  Vendors, Products, ProductCategories, EcomOrders,
-  RoomListings, RoomOwners, RoomInquiries, RoomRequests,
   Wallets, WalletTransactions, Payments, PaymentIntents, QRSessions, Topups, Payouts,
   VehicleTypes, SurgeRules, FareOverrides, FareEstimates, CoinRate,
   PromoCodes, PromoUsage, BirthdayPromos, Referrals, PopupAds,
@@ -68,7 +74,7 @@ const App = () => (
           <Route path="/admin/ecommerce/vendors" element={<Vendors />} />
           <Route path="/admin/ecommerce/products" element={<Products />} />
           <Route path="/admin/ecommerce/categories" element={<ProductCategories />} />
-          <Route path="/admin/ecommerce/orders" element={<EcomOrders />} />
+          <Route path="/admin/ecommerce/orders" element={<EcommerceOrders />} />
           <Route path="/admin/rooms/listings" element={<RoomListings />} />
           <Route path="/admin/rooms/owners" element={<RoomOwners />} />
           <Route path="/admin/rooms/inquiries" element={<RoomInquiries />} />

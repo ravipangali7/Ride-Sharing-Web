@@ -35,7 +35,7 @@ interface MenuItemData {
 
 const emptyMenuItem: Omit<MenuItemData, "id"> = {
   name: "", restaurant: "", restaurant_id: "", category: "", category_id: "",
-  price: 0, is_veg: false, is_available: true, description: "", preparation_time_minutes: "",
+  price: 0, is_veg: false, is_available: true, description: "", preparation_time_minutes: "15",
 };
 
 const advFilterFields: FilterField[] = [
@@ -104,13 +104,18 @@ export default function MenuItems() {
   const handleSave = () => {
     if (!editing.name) { toast.error("Name is required"); return; }
     if (!editing.restaurant_id) { toast.error("Restaurant is required"); return; }
-    const { restaurant, restaurant_id, category, category_id, ...rest } = editing as any;
+    if (!editing.category_id) { toast.error("Category is required"); return; }
+    const prep = parseInt(String(editing.preparation_time_minutes), 10);
+    if (!prep || prep < 1) { toast.error("Prep time must be at least 1 minute"); return; }
     const payload: Record<string, any> = {
-      ...rest,
-      restaurant: restaurant_id,
-      ...(category_id ? { category: category_id } : {}),
-      price: Number(rest.price) || 0,
-      preparation_time_minutes: rest.preparation_time_minutes ? parseInt(rest.preparation_time_minutes) : null,
+      name: editing.name,
+      description: editing.description || "",
+      restaurant: editing.restaurant_id,
+      category: editing.category_id,
+      price: Number(editing.price) || 0,
+      preparation_time_minutes: prep,
+      is_veg: Boolean(editing.is_veg),
+      is_available: Boolean(editing.is_available),
     };
     if (isEditing && (editing as any).id) {
       updateMutation.mutate({ id: (editing as any).id, data: payload }, { onSuccess: () => { toast.success("Item updated"); setFormOpen(false); } });
