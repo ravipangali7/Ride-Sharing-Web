@@ -51,14 +51,15 @@ const statusConfig: Record<string, { bg: string; text: string; dot?: string }> =
 };
 
 interface StatusBadgeProps {
-  status: StatusType;
+  status?: StatusType | null;
   pulse?: boolean;
   className?: string;
 }
 
 export function StatusBadge({ status, pulse, className }: StatusBadgeProps) {
-  const config = statusConfig[status] || { bg: 'bg-muted', text: 'text-muted-foreground' };
-  const label = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const normalizedStatus = typeof status === "string" && status.trim() ? status.trim() : "unknown";
+  const config = statusConfig[normalizedStatus] || { bg: 'bg-muted', text: 'text-muted-foreground' };
+  const label = normalizedStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
   return (
     <span className={cn(
