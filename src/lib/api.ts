@@ -146,6 +146,73 @@ export function createAdminResource<T = any>(
   });
 }
 
+export function fetchAdminResourceDetail<T = any>(resource: string, id: string) {
+  return request<T>(`/admin/${resource}/${id}/`);
+}
+
+/**
+ * POST admin resource with multipart/form-data (e.g. ProductImage file upload).
+ */
+export function createAdminResourceMultipart<T = Record<string, unknown>>(
+  resource: string,
+  formData: FormData,
+  onProgress?: (percent: number) => void,
+): Promise<T> {
+  const exec = (isRetry: boolean): Promise<T> =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API_BASE}/admin/${resource}/`);
+      const token = getAccessToken();
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && e.total > 0) {
+          onProgress?.(Math.round((100 * e.loaded) / e.total));
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status === 401 && !isRetry) {
+          void _refreshAccessToken().then((tok) => {
+            if (!tok) {
+              clearTokens();
+              window.location.href = "/admin/login";
+              reject(new Error("Unauthorized"));
+              return;
+            }
+            exec(true).then(resolve).catch(reject);
+          });
+          return;
+        }
+        if (xhr.status === 401) {
+          clearTokens();
+          window.location.href = "/admin/login";
+          reject(new Error("Unauthorized"));
+          return;
+        }
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(
+              xhr.responseText ? (JSON.parse(xhr.responseText) as T) : ({} as T),
+            );
+          } catch {
+            reject(new Error("Invalid response"));
+          }
+          return;
+        }
+        let msg = xhr.responseText;
+        try {
+          const j = JSON.parse(xhr.responseText) as { error?: string; detail?: string };
+          msg = j.error || j.detail || msg;
+        } catch {
+          // keep text
+        }
+        reject(new Error(msg || `HTTP ${xhr.status}`));
+      };
+      xhr.onerror = () => reject(new Error("Network error"));
+      xhr.send(formData);
+    });
+  return exec(false);
+}
+
 export function updateAdminResource<T = any>(
   resource: string,
   id: string,
