@@ -1,5 +1,35 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://ridesharingserver.luckyuser365.com/api";
 
+/**
+ * Socket.IO base URL (no `/api`, no trailing path). Nginx should proxy `/socket.io/` to Node :3333
+ * on the same host as Django — then this equals the API origin.
+ * Override with `VITE_REALTIME_URL` if needed.
+ */
+function deriveRealtimeBase(apiBase: string, override?: string): string {
+  const trimmed = (override ?? "").trim().replace(/\/$/, "");
+  if (trimmed) return trimmed;
+  let u: URL;
+  try {
+    u = new URL(apiBase);
+  } catch {
+    return "https://ridesharingserver.luckyuser365.com";
+  }
+  const host = u.hostname.toLowerCase();
+  const port = u.port || (u.protocol === "https:" ? "443" : "80");
+  if ((host === "127.0.0.1" || host === "localhost") && (port === "7000" || port === "8000")) {
+    return `http://${host}:3333`;
+  }
+  if (host === "10.0.2.2" && (port === "7000" || port === "8000")) {
+    return "http://10.0.2.2:3333";
+  }
+  return u.origin;
+}
+
+export const REALTIME_BASE = deriveRealtimeBase(
+  API_BASE,
+  import.meta.env.VITE_REALTIME_URL as string | undefined,
+);
+
 export interface ListResponse<T> {
   resource: string;
   count: number;
